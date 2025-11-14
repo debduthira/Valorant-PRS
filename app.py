@@ -168,7 +168,9 @@ if not st.session_state.user:
 # -------------------------------
 user = st.session_state.user
 
-st.sidebar.write(f"👋 Logged in as **{user['username']} ({user['role']})**")
+st.sidebar.write(f"👋 Logged in as **{user['username']}**")
+st.sidebar.write(f"🛠️ Role: **{user['role'].capitalize()}**")
+st.sidebar.write("---")
 if st.sidebar.button("Logout"):
     st.session_state.user = None
     st.rerun()
@@ -205,6 +207,8 @@ with st.form("match_form"):
             player_name = user["username"]
         if not player_name:
             st.error("Player name is required.")
+        if not acs or kills is None or deaths is None or assists is None:
+            st.error("Please fill in all required fields.")
         else:
             add_match(user["id"], player_name, win_loss, map_name, agent, current_rank, acs, econ_rating, kills, deaths, assists)
             st.success("✅ Match details added successfully!")
@@ -217,7 +221,8 @@ with st.form("delete_form"):
     match_data = fetch_matches_by_user(user["username"]) if user["role"] == "player" else fetch_all_matches()
     if match_data:
         df = pd.DataFrame(match_data)
-        record_options = df.apply(lambda row: f"{row['id']} | {row['player_name']} | {row['map_name']} | {row['agent']} | {row['current_rank']} | {row['kills']}/{row['deaths']}", axis=1)
+        # record_options = df.apply(lambda row: f"{row['id']} | {row['player_name']} | {row['map_name']} | {row['agent']} | {row['current_rank']} | {row['kills']}/{row['deaths']}", axis=1)
+        record_options = df.apply(lambda row: f"{row['player_name']} | {row['map_name']} | {row['agent']} | {row['current_rank']} | {row['kills']}/{row['deaths']}", axis=1)
         record_to_delete = st.selectbox("Select Record to Delete", record_options)
         if st.form_submit_button("Delete Record"):
             record_id = int(record_to_delete.split(" | ")[0])
@@ -240,7 +245,7 @@ if match_data:
     df["K/D Ratio"] = df.apply(lambda row: calculate_kd_ratio(row["kills"], row["deaths"]), axis=1)
 
     st.subheader("🎯 Your Match Records" if user["role"] == "player" else "🎯 All Match Records")
-    st.dataframe(df.drop(columns=["user_id", "id"]), use_container_width=True)
+    st.dataframe(df.drop(columns=["user_id", "id"]), width='stretch')
 else:
     st.info("No match data available. Please add match details.")
 
@@ -249,6 +254,6 @@ if all_match_data:
     if not aggregated_df.empty:
         st.subheader("🏆 Leaderboard: Ranked Players by Avg ACS")
         ranked_df = rank_players(aggregated_df)
-        st.dataframe(ranked_df, use_container_width=True)
+        st.dataframe(ranked_df, width='stretch')
 else:
     st.info("No leaderboard data available.")
